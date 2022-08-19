@@ -2,6 +2,7 @@
   <div>
     <input-csv v-model="data"/>
     <csv-editor :data="data" />
+    F
   </div>
 </template>
 
