@@ -1,49 +1,72 @@
 <template>
   <div>
-    <button @click="downloadCsv(dataCsv)" >Descargar</button>
-    <table>
-      <tr>
-        <td></td>
-        <td
-          :style=" index === active.col ? ' background-color: gray;  ' : '  background-color: #ccc; ' "
-          style="position: sticky; top: 0; color: #000"
-          v-for="(col, index) in maxColumn"
-          :key="index"
-        >
-          <div :style="'width:' + width + 'px'">
-            {{ numToChars(index) }}
-          </div>
-        </td>
-      </tr>
-      <tr v-for="(dataRow, i) in dataCsv" :key="i">
-        <td
-          :style=" i === active.row ? ' background-color: gray;  ' : '  background-color: #ccc; ' "
-          style="position: sticky; left: 0; color: #000"
-        >
-          {{ i + 1 }}
-        </td>
-        <td v-for="(dataCol, j) in dataRow" :key="j">
-          <input v-model="dataCsv[i][j]" @click="cellActive(i, j)" />
-        </td>
-      </tr>
-    </table>
+    <section id="container-tools">
+      <input type="file" @change="getCsv" />
+      <button @click="downloadCsv(dataCsv)">Descargar</button>
+      <input type="checkbox" v-model="isTitle" />fila titulo
+    </section>
+    <div style="width: 100%; height: 100%; overflow: scroll">
+      <table>
+        <tr>
+          <td></td>
+          <td
+            :style="
+              index === active.col
+                ? ' background-color: gray;  '
+                : '  background-color: #ccc; '
+            "
+            style="position: sticky; top: 0; color: #000"
+            v-for="(col, index) in maxColumn"
+            :key="index"
+          >
+            <div :style="'width:' + width + 'px'">
+              {{ numToChars(index) }}
+            </div>
+          </td>
+        </tr>
+        <tr v-for="(dataRow, i) in dataCsv" :key="i">
+          <td
+            :style="
+              i === active.row
+                ? ' background-color: gray;'
+                : '  background-color: #ccc; '
+            "
+            style="
+              position: sticky;
+              left: 0;
+              color: #000;
+              border: 1px solid #fff;
+            "
+          >
+            {{ i + 1 }}
+          </td>
+          <td v-for="(dataCol, j) in dataRow" :key="j">
+            <input v-model="dataCsv[i][j]" @click="cellActive(i, j)" />
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 </template>
 
 <script>
-import { computed, ref, toRef } from "vue";
+import { computed, ref } from "vue";
 export default {
-  props: {
-    data: {
-      type: String,
-    },
-  },
   setup(props, { emit }) {
     const width = ref(175);
     const heigth = ref(50);
-    const active = ref({})
-    let propData = toRef(props, "data");
+    const active = ref({});
 
+    const data = ref("");
+    const getCsv = function (e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        data.value = e.target.result;
+        emit("update:modelValue", data.value);
+      };
+      reader.readAsText(file);
+    };
     const csvToArray = function (str, delimiter = ",") {
       let rows = str.split("\n");
       for (let i = 0; i < rows.length; i++) {
@@ -87,7 +110,7 @@ export default {
 
     const dataCsv = computed({
       get() {
-        return csvToArray(propData.value);
+        return csvToArray(data.value);
       },
       set(value) {
         emit("update:data", value);
@@ -95,47 +118,51 @@ export default {
     });
 
     const maxColumn = computed(() => {
-      return getMaxColumn(csvToArray(propData.value));
+      return getMaxColumn(csvToArray(data.value));
     });
 
-
-    const downloadCsv = (array)=>{
-      console.log('array', array)
-       // (B) ARRAY TO CSV STRING
-       let csv = ''
-       array.forEach(row => {
-         row.forEach((col, index)=> {
-          csv += col
-          if(index !== row.length-1){
-            csv += ","
+    const downloadCsv = (array) => {
+      console.log("array", array);
+      // (B) ARRAY TO CSV STRING
+      let csv = "";
+      array.forEach((row) => {
+        row.forEach((col, index) => {
+          csv += col;
+          if (index !== row.length - 1) {
+            csv += ",";
           }
-        })
-       csv += "\n";
-       });
-          console.log('csv', csv)
-      
-        // (C) CREATE BLOB OBJECT
-        var myBlob = new Blob([csv], {type: "text/csv"});
-      
-        // (D) CREATE DOWNLOAD LINK
-        var url = window.URL.createObjectURL(myBlob);
-        var anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = "demo.csv";
-      
-        // (E) "FORCE DOWNLOAD"
-        // NOTE: MAY NOT ALWAYS WORK DUE TO BROWSER SECURITY
-        // BETTER TO LET USERS CLICK ON THEIR OWN
-        anchor.click();
-        window.URL.revokeObjectURL(url);
-        anchor.remove();
-    }
-    return { dataCsv, numToChars, maxColumn, width, heigth, active, cellActive, downloadCsv };
+        });
+        csv += "\n";
+      });
+      console.log("csv", csv);
+      var myBlob = new Blob([csv], { type: "text/csv" });
+      var url = window.URL.createObjectURL(myBlob);
+      var anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "demo.csv";
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+      anchor.remove();
+    };
+    return {
+      dataCsv,
+      numToChars,
+      maxColumn,
+      width,
+      heigth,
+      active,
+      cellActive,
+      downloadCsv,
+      getCsv,
+    };
   },
 };
 </script>
 
 <style>
+#container-tools {
+  margin: 20px;
+}
 table {
   border-collapse: collapse;
   width: 100%;
